@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personality Assessment - Question</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .bg-warm-gradient {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .card-glass {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        }
+        
+        .button-warm {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            transform: translateY(0px);
+            transition: all 0.3s ease;
+        }
+        
+        .button-warm:hover {
+            background: linear-gradient(135deg, #ee5a52, #ff6b6b);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(238, 90, 82, 0.4);
+        }
+        
+        .button-warm:active {
+            transform: translateY(0px);
+            box-shadow: 0 5px 15px rgba(238, 90, 82, 0.3);
+        }
+        
+        .progress-warm {
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-fill {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            transition: width 0.5s ease;
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+        }
+        
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .question-number {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .question-number:hover {
+            transform: scale(1.15);
+        }
+        
+        .question-number.current {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            transform: scale(1.1);
+        }
+        
+        .question-number.answered {
+            background: linear-gradient(135deg, #51cf66, #40c057);
+            box-shadow: 0 2px 8px rgba(81, 207, 102, 0.3);
+        }
+        
+        .question-number.unanswered {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .warm-shadow {
+            box-shadow: 0 10px 40px rgba(255, 154, 158, 0.2);
+        }
+        
+        .warm-text-primary {
+            color: #d63384;
+        }
+        
+        .warm-text-secondary {
+            color: #e91e63;
+        }
+        
+        /* Add home button styles */
+        .home-button {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            padding: 0.75rem 1.25rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .home-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .home-button:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .home-button {
+                top: 0.5rem;
+                right: 0.5rem;
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-warm-gradient min-h-screen overflow-x-hidden">
+    <a href="/" class="home-button">
+        🏠 Return Home
+    </a>
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Floating decorative elements -->
+            <div class="fixed top-10 left-10 w-20 h-20 bg-white bg-opacity-20 rounded-full floating-element hidden lg:block"></div>
+            <div class="fixed top-40 right-20 w-16 h-16 bg-white bg-opacity-15 rounded-full floating-element hidden lg:block" style="animation-delay: -2s;"></div>
+            <div class="fixed bottom-20 left-20 w-12 h-12 bg-white bg-opacity-10 rounded-full floating-element hidden lg:block" style="animation-delay: -4s;"></div>
+            
+            <!-- Progress Bar -->
+            <div class="mb-8 card-glass rounded-2xl p-6 warm-shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm font-semibold warm-text-primary">Assessment Progress</span>
+                    <span class="text-sm font-medium warm-text-secondary" id="progress-text">Question <span id="current-question-num">1</span> of <span id="total-questions">35</span></span>
+                </div>
+                <div class="progress-warm h-3 rounded-full">
+                    <div class="progress-fill h-full rounded-full" id="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Question Navigation -->
+                <div class="md:col-span-1">
+                    <div class="card-glass rounded-2xl p-4 warm-shadow">
+                        <h3 class="text-lg font-bold warm-text-primary mb-4 flex items-center">
+                            <span class="w-2 h-2 bg-gradient-to-r from-pink-400 to-red-400 rounded-full mr-2"></span>
+                            Questions
+                        </h3>
+                        <div class="flex flex-wrap gap-2 justify-start max-h-[320px] overflow-y-auto p-2" id="question-grid">
+                            <!-- Question numbers will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Content -->
+                <div class="md:col-span-3">
+                    <div class="card-glass rounded-2xl p-8 animate__animated animate__fadeIn warm-shadow">
+                        <div class="mb-8">
+                            <h1 class="text-4xl font-bold warm-text-primary mb-3 flex items-center">
+                                <span class="w-3 h-3 bg-gradient-to-r from-pink-400 to-red-400 rounded-full mr-3"></span>
+                                Question
+                            </h1>
+                            <p class="warm-text-secondary text-lg">Please answer the following question honestly and thoughtfully.</p>
+                        </div>
+
+                        <div id="question-container" class="mb-8">
+                            <p class="text-xl warm-text-primary mb-8 leading-relaxed font-medium">{{ question.text }}</p>
+                            
+                            {% if is_age_question %}
+                            <div class="space-y-4">
+                                <button onclick="submitAnswer('Yes')" 
+                                    class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                                    Yes
+                                </button>
+                                <button onclick="submitAnswer('No')"
+                                    class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                                    No
+                                </button>
+                            </div>
+                            {% else %}
+                            <div class="space-y-4">
+                                <button onclick="submitAnswer('Never')"
+                                    class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                                    Never
+                                </button>
+                                <button onclick="submitAnswer('Rarely')"
+                                    class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                                    Rarely
+                                </button>
+                                <button onclick="submitAnswer('Sometimes')"
+                                    class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                                    Sometimes
+                                </button>
+                                <button onclick="submitAnswer('Often')"
+                                    class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                                    Often
+                                </button>
+                                <button onclick="submitAnswer('Always')"
+                                    class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                                    Always
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div id="loading" class="hidden">
+                            <div class="flex justify-center items-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-4 border-pink-200 border-t-pink-500"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestionId = '{{ question_id }}';
+        let answeredQuestions = new Set();
+        let totalQuestions = 35;
+        let questionMapping = {}; // Maps grid positions (1-35) to actual question IDs
+        let currentQuestionPosition = 1; // Current position in grid (1-35)
+        
+        // Initialize question grid
+        function initializeQuestionGrid() {
+            const grid = document.getElementById('question-grid');
+            for (let i = 1; i <= totalQuestions; i++) {
+                const button = document.createElement('button');
+                button.className = 'question-number w-8 h-8 rounded-full text-sm font-bold flex items-center justify-center unanswered';
+                button.textContent = i;
+                button.onclick = () => navigateToQuestion(i);
+                button.id = `question-${i}`;
+                grid.appendChild(button);
+            }
+            updateQuestionGrid();
+        }
+        
+        // Update question grid appearance
+        function updateQuestionGrid() {
+            for (let i = 1; i <= totalQuestions; i++) {
+                const button = document.getElementById(`question-${i}`);
+                button.classList.remove('current', 'answered', 'unanswered');
+                
+                if (i === currentQuestionPosition) {
+                    button.classList.add('current');
+                    button.style.color = 'white';
+                } else if (answeredQuestions.has(i)) {
+                    button.classList.add('answered');
+                    button.style.color = 'white';
+                } else {
+                    button.classList.add('unanswered');
+                    button.style.color = '#d63384';
+                }
+            }
+        }
+        
+        // Navigate to a specific question by grid position
+        async function navigateToQuestion(position) {
+            if (position === currentQuestionPosition) return;
+            
+            // Check if we have the question ID for this position
+            if (!questionMapping[position]) {
+                alert('This question is not yet available. Please complete the previous questions first.');
+                return;
+            }
+            
+            const questionContainer = document.getElementById('question-container');
+            const loading = document.getElementById('loading');
+            
+            questionContainer.classList.add('animate__animated', 'animate__fadeOut');
+            loading.classList.remove('hidden');
+            
+            try {
+                // Use the correct URL format with path parameter
+                const response = await fetch(`/question/{{ patient.id }}/${questionMapping[position]}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentQuestionId = data.question_id;
+                    currentQuestionPosition = position;
+                    updateQuestionDisplay(data);
+                } else {
+                    alert('Unable to navigate to that question. Please complete the current question first.');
+                }
+            } catch (error) {
+                console.error('Error navigating to question:', error);
+                alert('An error occurred while navigating. Please try again.');
+            } finally {
+                loading.classList.add('hidden');
+                questionContainer.classList.remove('animate__fadeOut');
+                questionContainer.classList.add('animate__fadeIn');
+            }
+        }
+        
+        // Update question display
+        function updateQuestionDisplay(data) {
+            const questionContainer = document.getElementById('question-container');
+            
+            // Handle different response structures
+            let questionText = '';
+            if (data.question && data.question.text) {
+                // From navigation endpoint
+                questionText = data.question.text;
+            } else if (data.next_question && data.next_question.text) {
+                // From answer submission endpoint
+                questionText = data.next_question.text;
+            } else {
+                console.error('Question text not found in response:', data);
+                questionText = 'Question text not available';
+            }
+            
+            const buttonsHtml = data.is_age_question ? `
+                <div class="space-y-4">
+                    <button onclick="submitAnswer('Yes')" 
+                        class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                        Yes
+                    </button>
+                    <button onclick="submitAnswer('No')"
+                        class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                        No
+                    </button>
+                </div>
+            ` : `
+                <div class="space-y-4">
+                    <button onclick="submitAnswer('Never')"
+                        class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                        Never
+                    </button>
+                    <button onclick="submitAnswer('Rarely')"
+                        class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                        Rarely
+                    </button>
+                    <button onclick="submitAnswer('Sometimes')"
+                        class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                        Sometimes
+                    </button>
+                    <button onclick="submitAnswer('Often')"
+                        class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                        Often
+                    </button>
+                    <button onclick="submitAnswer('Always')"
+                        class="w-full button-warm text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg">
+                        Always
+                    </button>
+                </div>
+            `;
+            
+            questionContainer.innerHTML = `
+                <p class="text-xl warm-text-primary mb-8 leading-relaxed font-medium">${questionText}</p>
+                ${buttonsHtml}
+            `;
+            
+            // Update progress
+            document.getElementById('current-question-num').textContent = currentQuestionPosition;
+            document.getElementById('progress-bar').style.width = `${(answeredQuestions.size / totalQuestions) * 100}%`;
+            updateQuestionGrid();
+        }
+        
+        async function submitAnswer(answer) {
+            const questionContainer = document.getElementById('question-container');
+            const loading = document.getElementById('loading');
+            
+            // Show loading state
+            questionContainer.classList.add('animate__animated', 'animate__fadeOut');
+            loading.classList.remove('hidden');
+            
+            try {
+                console.log('Submitting answer:', answer, 'for question:', currentQuestionId);
+                
+                const response = await fetch(`/answer/{{ patient.id }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        question_id: currentQuestionId,
+                        answer: answer
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server error response:', errorText);
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (data.is_last) {
+                    console.log('Assessment completed, redirecting to results');
+                    window.location.href = `/results/{{ patient.id }}`;
+                } else {
+                    console.log('Moving to next question:', data.next_question_id);
+                    // Mark current question as answered
+                    answeredQuestions.add(currentQuestionPosition);
+                    
+                    // Update to next question
+                    currentQuestionId = data.next_question_id;
+                    currentQuestionPosition += 1;
+                    
+                    // Add the new question to our mapping
+                    questionMapping[currentQuestionPosition] = data.next_question_id;
+                    
+                    updateQuestionDisplay(data);
+                }
+            } catch (error) {
+                console.error('Error submitting answer:', error);
+                // More specific error handling
+                if (error.message.includes('Server error')) {
+                    alert(`Server error occurred: ${error.message}`);
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    alert('Network error. Please check your connection and try again.');
+                } else {
+                    alert(`An error occurred: ${error.message}`);
+                }
+            } finally {
+                // Hide loading state
+                loading.classList.add('hidden');
+                questionContainer.classList.remove('animate__fadeOut');
+                questionContainer.classList.add('animate__fadeIn');
+            }
+        }
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initializing page with question ID:', currentQuestionId);
+            initializeQuestionGrid();
+            
+            // Initialize the first question mapping
+            questionMapping[1] = currentQuestionId;
+            
+            // Get initial answered questions and question mapping from server
+            fetch(`/question-mapping/{{ patient.id }}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Question mapping received:', data);
+                    if (data.question_mapping) {
+                        questionMapping = data.question_mapping;
+                    }
+                    if (data.answered_questions) {
+                        answeredQuestions = new Set(data.answered_questions);
+                    }
+                    if (data.current_position) {
+                        currentQuestionPosition = data.current_position;
+                    }
+                    updateQuestionGrid();
+                    document.getElementById('progress-bar').style.width = `${(answeredQuestions.size / totalQuestions) * 100}%`;
+                    document.getElementById('current-question-num').textContent = currentQuestionPosition;
+                })
+                .catch(error => {
+                    console.error('Error fetching question mapping:', error);
+                    // Fallback: try the old endpoint
+                    fetch(`/answered-questions/{{ patient.id }}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Initial answered questions:', data.answered_questions);
+                            answeredQuestions = new Set(data.answered_questions);
+                            updateQuestionGrid();
+                            document.getElementById('progress-bar').style.width = `${(answeredQuestions.size / totalQuestions) * 100}%`;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching answered questions:', error);
+                        });
+                });
+        });
+    </script>
+</body>
+</html>

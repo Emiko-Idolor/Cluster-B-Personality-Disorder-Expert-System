@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                rgba(255, 182, 193, 0.1) 0%, 
+                rgba(255, 105, 180, 0.1) 25%, 
+                rgba(255, 69, 0, 0.1) 50%, 
+                rgba(255, 20, 147, 0.1) 75%, 
+                rgba(199, 21, 133, 0.1) 100%);
+            animation: gradientShift 8s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { opacity: 0.1; }
+            50% { opacity: 0.2; }
+        }
+
+        .floating-shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-shape:nth-child(1) {
+            width: 100px;
+            height: 100px;
+            top: 15%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-shape:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            top: 60%;
+            right: 15%;
+            animation-delay: 2s;
+        }
+
+        .floating-shape:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            top: 30%;
+            left: 80%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-25px) rotate(180deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.1),
+                0 2px 16px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideInUp 0.8s ease-out;
+            margin-bottom: 2rem;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52, #ff8e8e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+            background: linear-gradient(135deg, #ff5252, #e53e3e);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(72, 187, 120, 0.4);
+            background: linear-gradient(135deg, #38a169, #2f855a);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+            color: white;
+            box-shadow: 0 4px 15px rgba(229, 62, 62, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(229, 62, 62, 0.4);
+            background: linear-gradient(135deg, #c53030, #9c2626);
+        }
+
+        .btn-home {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a67d8, #6b46c1);
+        }
+
+        .assessment-section {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .assessment-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .assessment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .assessment-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .assessment-title::before {
+            content: '📊';
+            font-size: 1.2rem;
+        }
+
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .score-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff6b6b, #ee5a52, #ff8e8e);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .score-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .score-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .score-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-label {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .score-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ff6b6b;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ee5a52);
+            border-radius: 4px;
+            transition: width 1s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .recommendations-section {
+            margin-top: 2rem;
+        }
+
+        .recommendations-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recommendations-title::before {
+            content: '💡';
+            font-size: 1.1rem;
+        }
+
+        .recommendation-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .recommendation-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recommendation-header::before {
+            content: '•';
+            color: #ff6b6b;
+            font-size: 1.5rem;
+        }
+
+        .recommendation-description {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .criteria-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .criteria-title {
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .criteria-list, .action-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .criteria-list li, .action-list li {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .criteria-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #48bb78;
+            font-weight: bold;
+        }
+
+        .action-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .no-results-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .no-results-text {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .main-card {
+                padding: 2rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .action-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn-group {
+                justify-content: center;
+            }
+            
+            .scores-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .probability-level {
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .level {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .level.high {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .level.moderate {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .level.low {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .level.negligible {
+            background-color: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-shape"></div>
+    <div class="floating-shape"></div>
+    <div class="floating-shape"></div>
+
+    <div class="container">
+        <div class="main-card">
+            <div class="header">
+                <h1 class="title">Assessment Results</h1>
+                <p class="subtitle">Results for {{ patient.name }}</p>
+            </div>
+
+            <div class="action-bar">
+                <div class="btn-group">
+                    <a href="/" class="btn btn-home">
+                        🏠 Return Home
+                    </a>
+                    <a href="/assessment/{{ patient.id }}" class="btn btn-primary">
+                        📝 Take New Assessment
+                    </a>
+                    <a href="/metrics/{{ patient.id }}" class="btn btn-secondary">
+                        📊 View Metrics
+                    </a>
+                </div>
+                <button onclick="deleteAssessments()" class="btn btn-danger">
+                    🗑️ Delete All Results
+                </button>
+            </div>
+
+            {% if assessments %}
+            {% for assessment in assessments %}
+            <div class="assessment-section">
+                <div class="assessment-header">
+                    <h2 class="assessment-title">
+                        Assessment from {{ assessment.created_at.strftime('%B %d, %Y') }}
+                    </h2>
+                </div>
+
+                <div class="scores-grid">
+                    {% for disorder, score in assessment.scores.items() %}
+                    <div class="score-card">
+                        <h3 class="score-title">{{ disorder }}</h3>
+                        <div class="score-info">
+                            <span class="score-label">Probability</span>
+                            <span class="score-value">{{ "%.1f"|format(score) }}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ score }}%"></div>
+                        </div>
+                        <div class="probability-level">
+                            {% if score >= 60 %}
+                                <span class="level high">High Probability</span>
+                            {% elif score >= 40 %}
+                                <span class="level moderate">Moderate Probability</span>
+                            {% elif score >= 20 %}
+                                <span class="level low">Low Probability</span>
+                            {% else %}
+                                <span class="level negligible">Negligible Probability</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if assessment.recommendations %}
+                <div class="recommendations-section">
+                    <h3 class="recommendations-title">Recommendations</h3>
+                    {% for recommendation in assessment.recommendations %}
+                    {% if recommendation.score >= 60 %}
+                    <div class="recommendation-card">
+                        <h4 class="recommendation-header">{{ recommendation.disorder }}</h4>
+                        <p class="recommendation-description">{{ recommendation.description }}</p>
+                        
+                        {% if recommendation.criteria_met %}
+                        <div class="criteria-section">
+                            <h5 class="criteria-title">Criteria Met:</h5>
+                            <ul class="criteria-list">
+                                {% for criterion in recommendation.criteria_met %}
+                                <li><strong>{{ criterion.name }}:</strong> {{ criterion.description }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div>
+                            <h5 class="criteria-title">Recommended Actions:</h5>
+                            <ul class="action-list">
+                                {% for step in recommendation.action_steps %}
+                                <li>{{ step }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="no-results">
+                <div class="no-results-icon">📊</div>
+                <p class="no-results-text">No assessment results found.</p>
+                <a href="/assessment/{{ patient.id }}" class="btn btn-primary">
+                    🚀 Take Your First Assessment
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Animate progress bars on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach((bar, index) => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, index * 200);
+            });
+        });
+
+        async function deleteAssessments() {
+            // Enhanced confirmation dialog
+            const confirmation = confirm(
+                '⚠️ Are you sure you want to delete all your assessment results?\n\n' +
+                'This action cannot be undone and will permanently remove all your data.'
+            );
+            
+            if (confirmation) {
+                // Add loading state
+                const deleteButton = document.querySelector('.btn-danger');
+                const originalText = deleteButton.innerHTML;
+                deleteButton.innerHTML = '⏳ Deleting...';
+                deleteButton.style.opacity = '0.7';
+                deleteButton.disabled = true;
+                
+                try {
+                    const response = await fetch('/assessments/{{ patient.id }}', {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        // Success animation
+                        deleteButton.innerHTML = '✅ Deleted';
+                        deleteButton.style.background = 'linear-gradient(135deg, #48bb78, #38a169)';
+                        
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        throw new Error('Failed to delete assessments');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    
+                    // Error state
+                    deleteButton.innerHTML = '❌ Failed';
+                    setTimeout(() => {
+                        deleteButton.innerHTML = originalText;
+                        deleteButton.style.opacity = '1';
+                        deleteButton.disabled = false;
+                    }, 2000);
+                    
+                    alert('❌ Failed to delete assessments. Please try again.');
+                }
+            }
+        }
+
+        // Add smooth scroll behavior for long pages
+        document.documentElement.style.scrollBehavior = 'smooth';
+    </script>
+</body>
+</html>

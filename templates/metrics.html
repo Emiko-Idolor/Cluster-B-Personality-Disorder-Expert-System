@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Metrics Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                rgba(255, 182, 193, 0.1) 0%, 
+                rgba(255, 105, 180, 0.1) 25%, 
+                rgba(255, 69, 0, 0.1) 50%, 
+                rgba(255, 20, 147, 0.1) 75%, 
+                rgba(199, 21, 133, 0.1) 100%);
+            animation: gradientShift 8s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { opacity: 0.1; }
+            50% { opacity: 0.2; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52, #ff8e8e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.1),
+                0 2px 16px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeInUp 0.6s ease-out;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-icon {
+            font-size: 1.5rem;
+            padding: 0.5rem;
+            background: rgba(255, 107, 107, 0.2);
+            border-radius: 12px;
+        }
+
+        .metric-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 1rem;
+        }
+
+        .chart-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .summary-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .trend-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+
+        .trend-up {
+            color: #ff6b6b;
+        }
+
+        .trend-down {
+            color: #48bb78;
+        }
+
+        .trend-stable {
+            color: #ffd93d;
+        }
+
+        .insights-section {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .insights-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .insight-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .insight-value {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-description {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.4;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-home {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .no-data-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .no-data-text {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+            
+            .insights-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Patient Metrics Dashboard</h1>
+            <p class="subtitle">Comprehensive trend analysis and insights for {{ patient.name }}</p>
+        </div>
+
+        {% if assessments and assessments|length > 1 %}
+        <div class="metrics-grid">
+            <!-- Trend Analysis Chart -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon">📈</div>
+                    <h3 class="metric-title">Score Trends Over Time</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+                <div class="chart-summary">
+                    <div class="summary-item">
+                        <div class="summary-label">Total Assessments</div>
+                        <div class="summary-value">{{ assessments|length }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Time Period</div>
+                        <div class="summary-value">{{ time_period }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Latest Assessment</div>
+                        <div class="summary-value">{{ latest_date }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disorder Comparison -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon">⚖️</div>
+                    <h3 class="metric-title">Current vs Previous Comparison</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+                <div class="chart-summary">
+                    <div class="summary-item">
+                        <div class="summary-label">Improved</div>
+                        <div class="summary-value trend-down">{{ improved_count }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Worsened</div>
+                        <div class="summary-value trend-up">{{ worsened_count }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Stable</div>
+                        <div class="summary-value trend-stable">{{ stable_count }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Scores -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon">📊</div>
+                    <h3 class="metric-title">Average Scores</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="averageChart"></canvas>
+                </div>
+                <div class="chart-summary">
+                    <div class="summary-item">
+                        <div class="summary-label">Highest Avg</div>
+                        <div class="summary-value">{{ highest_avg_disorder }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Most Variable</div>
+                        <div class="summary-value">{{ most_variable_disorder }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Tracking -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon">🎯</div>
+                    <h3 class="metric-title">Progress Tracking</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+                <div class="chart-summary">
+                    <div class="summary-item">
+                        <div class="summary-label">Overall Trend</div>
+                        <div class="summary-value">{{ overall_trend }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Rate of Change</div>
+                        <div class="summary-value">{{ rate_of_change }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights Section -->
+        <div class="insights-section">
+            <h3 class="insights-title">
+                🧠 Clinical Insights & Recommendations
+            </h3>
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <div class="insight-label">Trend Analysis</div>
+                    <div class="insight-value">{{ trend_analysis }}</div>
+                    <div class="insight-description">{{ trend_description }}</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-label">Risk Assessment</div>
+                    <div class="insight-value">{{ risk_level }}</div>
+                    <div class="insight-description">{{ risk_description }}</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-label">Treatment Progress</div>
+                    <div class="insight-value">{{ treatment_progress }}</div>
+                    <div class="insight-description">{{ treatment_description }}</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-label">Next Steps</div>
+                    <div class="insight-value">{{ next_steps }}</div>
+                    <div class="insight-description">{{ next_steps_description }}</div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="no-data">
+            <div class="no-data-icon">📊</div>
+            <p class="no-data-text">
+                {% if not assessments %}
+                No assessment data available for trend analysis.
+                {% else %}
+                At least 2 assessments are needed for trend analysis.
+                {% endif %}
+            </p>
+            <p style="color: rgba(255, 255, 255, 0.6); margin-bottom: 2rem;">
+                Complete more assessments to unlock comprehensive metrics and insights.
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="action-buttons">
+            <a href="/" class="btn btn-home">🏠 Return Home</a>
+            <a href="/assessment/{{ patient.id }}" class="btn btn-primary">📝 Take New Assessment</a>
+            <a href="/results/{{ patient.id }}" class="btn btn-secondary">📋 View Results</a>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - in real implementation, this would come from the backend
+        const assessmentData = {
+            dates: ['2024-01-15', '2024-02-20', '2024-03-25', '2024-04-30'],
+            disorders: ['Borderline', 'Narcissistic', 'Histrionic', 'Antisocial'],
+            scores: {
+                'Borderline': [65, 58, 52, 45],
+                'Narcissistic': [32, 35, 28, 30],
+                'Histrionic': [28, 25, 30, 22],
+                'Antisocial': [15, 18, 12, 10]
+            }
+        };
+
+        // Chart.js default configuration
+        Chart.defaults.font.family = 'Inter';
+        Chart.defaults.color = 'rgba(255, 255, 255, 0.8)';
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+
+        // Color palette for disorders
+        const colors = {
+            'Borderline': {
+                primary: 'rgba(255, 107, 107, 0.8)',
+                secondary: 'rgba(255, 107, 107, 0.2)'
+            },
+            'Narcissistic': {
+                primary: 'rgba(72, 187, 120, 0.8)',
+                secondary: 'rgba(72, 187, 120, 0.2)'
+            },
+            'Histrionic': {
+                primary: 'rgba(255, 193, 7, 0.8)',
+                secondary: 'rgba(255, 193, 7, 0.2)'
+            },
+            'Antisocial': {
+                primary: 'rgba(156, 39, 176, 0.8)',
+                secondary: 'rgba(156, 39, 176, 0.2)'
+            }
+        };
+
+        // 1. Trend Chart
+        const trendCtx = document.getElementById('trendChart');
+        if (trendCtx) {
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: assessmentData.dates.map(date => 
+                        new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    ),
+                    datasets: assessmentData.disorders.map(disorder => ({
+                        label: disorder,
+                        data: assessmentData.scores[disorder],
+                        borderColor: colors[disorder].primary,
+                        backgroundColor: colors[disorder].secondary,
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: colors[disorder].primary,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                font: {
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        // 2. Comparison Chart (Current vs Previous)
+        const comparisonCtx = document.getElementById('comparisonChart');
+        if (comparisonCtx) {
+            const currentScores = assessmentData.disorders.map(disorder => 
+                assessmentData.scores[disorder][assessmentData.scores[disorder].length - 1]
+            );
+            const previousScores = assessmentData.disorders.map(disorder => 
+                assessmentData.scores[disorder][assessmentData.scores[disorder].length - 2]
+            );
+
+            new Chart(comparisonCtx, {
+                type: 'bar',
+                data: {
+                    labels: assessmentData.disorders,
+                    datasets: [
+                        {
+                            label: 'Previous Assessment',
+                            data: previousScores,
+                            backgroundColor: assessmentData.disorders.map(disorder => colors[disorder].secondary),
+                            borderColor: assessmentData.disorders.map(disorder => colors[disorder].primary),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        },
+                        {
+                            label: 'Current Assessment',
+                            data: currentScores,
+                            backgroundColor: assessmentData.disorders.map(disorder => colors[disorder].primary),
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                font: {
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutBounce'
+                    }
+                }
+            });
+        }
+
+        // 3. Average Scores Chart
+        const averageCtx = document.getElementById('averageChart');
+        if (averageCtx) {
+            const averageScores = assessmentData.disorders.map(disorder => {
+                const scores = assessmentData.scores[disorder];
+                return scores.reduce((a, b) => a + b, 0) / scores.length;
+            });
+
+            new Chart(averageCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: assessmentData.disorders,
+                    datasets: [{
+                        data: averageScores,
+                        backgroundColor: assessmentData.disorders.map(disorder => colors[disorder].primary),
+                        borderColor: '#fff',
+                        borderWidth: 3,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.parsed.toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 2000
+                    }
+                }
+            });
+        }
+
+        // 4. Progress/Improvement Chart
+        const progressCtx = document.getElementById('progressChart');
+        if (progressCtx) {
+            // Calculate improvement (first vs last assessment)
+            const improvementData = assessmentData.disorders.map(disorder => {
+                const scores = assessmentData.scores[disorder];
+                const firstScore = scores[0];
+                const lastScore = scores[scores.length - 1];
+                return ((firstScore - lastScore) / firstScore) * 100; // Positive = improvement
+            });
+
+            new Chart(progressCtx, {
+                type: 'bar',
+                data: {
+                    labels: assessmentData.disorders,
+                    datasets: [{
+                        label: 'Improvement %',
+                        data: improvementData,
+                        backgroundColor: improvementData.map(value => 
+                            value > 0 ? 'rgba(72, 187, 120, 0.8)' : 'rgba(255, 107, 107, 0.8)'
+                        ),
+                        borderColor: improvementData.map(value => 
+                            value > 0 ? 'rgba(72, 187, 120, 1)' : 'rgba(255, 107, 107, 1)'
+                        ),
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.x;
+                                    const status = value > 0 ? 'Improved' : 'Worsened';
+                                    return `${status}: ${Math.abs(value).toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                font: {
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                font: {
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutBounce'
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
