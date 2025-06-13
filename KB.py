@@ -424,7 +424,7 @@ class ClusterBKnowledgeBase:
             "aspd_q3": "Do you act on impulse without thinking through the long-term consequences (e.g., quitting jobs suddenly, reckless decisions)?",
             "aspd_q4": "Have you struggled with irritability or frustration that sometimes leads to arguments or physical confrontations?",
             "aspd_q5": "Do you often act without concern for your own or others' safety (e.g., drunk driving, risky sex, neglecting children)?",
-            "aspd_q6": "Before age 15, did you often get into trouble for fighting, lying, or breaking rules at home or school?",
+            "aspd_q6": "Have you found it difficult to keep a steady job or manage responsibilities like paying bills?",
             "aspd_q7": "Do you feel little or no remorse when you harm others or break rules (e.g., rationalizing or blaming the victim)?",
             "aspd_q8": "Before age 15, did you often get into trouble for fighting, lying, or breaking rules at home or school?",
             "aspd_q9": "Are you currently over the age of 18?",
