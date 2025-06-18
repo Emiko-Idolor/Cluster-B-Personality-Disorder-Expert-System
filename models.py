@@ -27,7 +27,8 @@ class Assessment(Base):
     recommendations = Column(JSON, default=dict)
     completed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+    detailed_report = Column(JSON, default=dict)  
+
     # Relationship
     patient = relationship("Patient", back_populates="assessments")
     

@@ -360,6 +360,14 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        #chart-error {
+            display: none;
+            text-align: center;
+            color: red;
+            margin: 1rem 0;
+            font-size: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -370,6 +378,7 @@
         </div>
 
         {% if assessments and assessments|length > 1 %}
+        <div id="chart-error"></div>
         <div class="metrics-grid">
             <!-- Trend Analysis Chart -->
             <div class="metric-card">
@@ -425,7 +434,7 @@
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-icon">📊</div>
-                    <h3 class="metric-title">Average Scores</h3>
+                    <h3 class="metric-title">Average Scores by Disorder</h3>
                 </div>
                 <div class="chart-container">
                     <canvas id="averageChart"></canvas>
@@ -438,27 +447,6 @@
                     <div class="summary-item">
                         <div class="summary-label">Most Variable</div>
                         <div class="summary-value">{{ most_variable_disorder }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Progress Tracking -->
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="metric-icon">🎯</div>
-                    <h3 class="metric-title">Progress Tracking</h3>
-                </div>
-                <div class="chart-container">
-                    <canvas id="progressChart"></canvas>
-                </div>
-                <div class="chart-summary">
-                    <div class="summary-item">
-                        <div class="summary-label">Overall Trend</div>
-                        <div class="summary-value">{{ overall_trend }}</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">Rate of Change</div>
-                        <div class="summary-value">{{ rate_of_change }}</div>
                     </div>
                 </div>
             </div>
@@ -517,387 +505,312 @@
     </div>
 
     <script>
-        // Sample data - in real implementation, this would come from the backend
-        const assessmentData = {
-            dates: ['2024-01-15', '2024-02-20', '2024-03-25', '2024-04-30'],
-            disorders: ['Borderline', 'Narcissistic', 'Histrionic', 'Antisocial'],
-            scores: {
-                'Borderline': [65, 58, 52, 45],
-                'Narcissistic': [32, 35, 28, 30],
-                'Histrionic': [28, 25, 30, 22],
-                'Antisocial': [15, 18, 12, 10]
-            }
-        };
+        // Check if data is available from backend
+        const hasData = Boolean({{ dates and disorders and scores | tojson | safe }});
+        
+        if (hasData) {
+            // Use actual data from backend
+            const assessmentData = {
+                dates: JSON.parse('{{ dates | tojson | safe }}'),
+                disorders: JSON.parse('{{ disorders | tojson | safe }}'),
+                scores: JSON.parse('{{ scores | tojson | safe }}')
+            };
 
-        // Chart.js default configuration
-        Chart.defaults.font.family = 'Inter';
-        Chart.defaults.color = 'rgba(255, 255, 255, 0.8)';
-        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+            // Chart.js default configuration
+            Chart.defaults.font.family = 'Inter';
+            Chart.defaults.color = 'rgba(255, 255, 255, 0.8)';
+            Chart.defaults.plugins.legend.labels.usePointStyle = true;
 
-        // Color palette for disorders
-        const colors = {
-            'Borderline': {
-                primary: 'rgba(255, 107, 107, 0.8)',
-                secondary: 'rgba(255, 107, 107, 0.2)'
-            },
-            'Narcissistic': {
-                primary: 'rgba(72, 187, 120, 0.8)',
-                secondary: 'rgba(72, 187, 120, 0.2)'
-            },
-            'Histrionic': {
-                primary: 'rgba(255, 193, 7, 0.8)',
-                secondary: 'rgba(255, 193, 7, 0.2)'
-            },
-            'Antisocial': {
-                primary: 'rgba(156, 39, 176, 0.8)',
-                secondary: 'rgba(156, 39, 176, 0.2)'
-            }
-        };
-
-        // 1. Trend Chart
-        const trendCtx = document.getElementById('trendChart');
-        if (trendCtx) {
-            new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: assessmentData.dates.map(date => 
-                        new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    ),
-                    datasets: assessmentData.disorders.map(disorder => ({
-                        label: disorder,
-                        data: assessmentData.scores[disorder],
-                        borderColor: colors[disorder].primary,
-                        backgroundColor: colors[disorder].secondary,
-                        borderWidth: 3,
-                        fill: false,
-                        tension: 0.4,
-                        pointRadius: 6,
-                        pointHoverRadius: 8,
-                        pointBackgroundColor: colors[disorder].primary,
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2
-                    }))
+            // Color palette for disorders
+            const colors = {
+                'Borderline': {
+                    primary: 'rgba(255, 107, 107, 0.8)',
+                    secondary: 'rgba(255, 107, 107, 0.2)'
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                padding: 20,
-                                font: {
-                                    size: 12,
-                                    weight: '500'
-                                }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            borderColor: 'rgba(255, 255, 255, 0.2)',
-                            borderWidth: 1,
-                            cornerRadius: 8,
-                            displayColors: true,
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y}%`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                font: {
-                                    size: 11
-                                }
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                font: {
-                                    size: 11
-                                },
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    animation: {
-                        duration: 2000,
-                        easing: 'easeInOutQuart'
-                    }
+                'Narcissistic': {
+                    primary: 'rgba(72, 187, 120, 0.8)',
+                    secondary: 'rgba(72, 187, 120, 0.2)'
+                },
+                'Histrionic': {
+                    primary: 'rgba(255, 193, 7, 0.8)',
+                    secondary: 'rgba(255, 193, 7, 0.2)'
+                },
+                'Antisocial': {
+                    primary: 'rgba(156, 39, 176, 0.8)',
+                    secondary: 'rgba(156, 39, 176, 0.2)'
                 }
-            });
-        }
+            };
 
-        // 2. Comparison Chart (Current vs Previous)
-        const comparisonCtx = document.getElementById('comparisonChart');
-        if (comparisonCtx) {
-            const currentScores = assessmentData.disorders.map(disorder => 
-                assessmentData.scores[disorder][assessmentData.scores[disorder].length - 1]
-            );
-            const previousScores = assessmentData.disorders.map(disorder => 
-                assessmentData.scores[disorder][assessmentData.scores[disorder].length - 2]
-            );
-
-            new Chart(comparisonCtx, {
-                type: 'bar',
-                data: {
-                    labels: assessmentData.disorders,
-                    datasets: [
-                        {
-                            label: 'Previous Assessment',
-                            data: previousScores,
-                            backgroundColor: assessmentData.disorders.map(disorder => colors[disorder].secondary),
-                            borderColor: assessmentData.disorders.map(disorder => colors[disorder].primary),
-                            borderWidth: 2,
-                            borderRadius: 8,
-                            borderSkipped: false
+            // 1. Trend Chart
+            const trendCtx = document.getElementById('trendChart');
+            if (trendCtx) {
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: assessmentData.dates.map(date => 
+                            new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        ),
+                        datasets: assessmentData.disorders.map(disorder => ({
+                            label: disorder,
+                            data: assessmentData.scores[disorder],
+                            borderColor: colors[disorder].primary,
+                            backgroundColor: colors[disorder].secondary,
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            pointBackgroundColor: colors[disorder].primary,
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    padding: 20,
+                                    font: {
+                                        size: 12,
+                                        weight: '500'
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
+                                    }
+                                }
+                            }
                         },
-                        {
-                            label: 'Current Assessment',
-                            data: currentScores,
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    font: {
+                                        size: 11
+                                    },
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        animation: {
+                            duration: 2000,
+                            easing: 'easeInOutQuart'
+                        }
+                    }
+                });
+            }
+
+            // 2. Comparison Chart (Current vs Previous)
+            const comparisonCtx = document.getElementById('comparisonChart');
+            if (comparisonCtx) {
+                const currentScores = assessmentData.disorders.map(disorder => 
+                    assessmentData.scores[disorder][assessmentData.scores[disorder].length - 1]
+                );
+                const previousScores = assessmentData.disorders.map(disorder => 
+                    assessmentData.scores[disorder][assessmentData.scores[disorder].length - 2]
+                );
+
+                new Chart(comparisonCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: assessmentData.disorders,
+                        datasets: [
+                            {
+                                label: 'Previous Assessment',
+                                data: previousScores,
+                                backgroundColor: assessmentData.disorders.map(disorder => colors[disorder].secondary),
+                                borderColor: assessmentData.disorders.map(disorder => colors[disorder].primary),
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false
+                            },
+                            {
+                                label: 'Current Assessment',
+                                data: currentScores,
+                                backgroundColor: assessmentData.disorders.map(disorder => colors[disorder].primary),
+                                borderColor: '#fff',
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    padding: 20,
+                                    font: {
+                                        size: 12,
+                                        weight: '500'
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    font: {
+                                        size: 11
+                                    },
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 1500,
+                            easing: 'easeOutBounce'
+                        }
+                    }
+                });
+            }
+
+            // 3. Average Scores Chart
+            const averageCtx = document.getElementById('averageChart');
+            if (averageCtx) {
+                const averageScores = assessmentData.disorders.map(disorder => {
+                    const scores = assessmentData.scores[disorder];
+                    return scores.reduce((a, b) => a + b, 0) / scores.length;
+                });
+
+                new Chart(averageCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: assessmentData.disorders,
+                        datasets: [{
+                            data: averageScores,
                             backgroundColor: assessmentData.disorders.map(disorder => colors[disorder].primary),
                             borderColor: '#fff',
-                            borderWidth: 2,
-                            borderRadius: 8,
-                            borderSkipped: false
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                padding: 20,
-                                font: {
-                                    size: 12,
-                                    weight: '500'
+                            borderWidth: 3,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    font: {
+                                        size: 12,
+                                        weight: '500'
+                                    },
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        if (data.labels.length && data.datasets.length) {
+                                            return data.labels.map((label, i) => {
+                                                const value = data.datasets[0].data[i];
+                                                return {
+                                                    text: `${label}: ${value.toFixed(1)}%`,
+                                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                                    hidden: false,
+                                                    index: i
+                                                };
+                                            });
+                                        }
+                                        return [];
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Average: ${context.parsed.toFixed(1)}%`;
+                                    }
                                 }
                             }
                         },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            borderColor: 'rgba(255, 255, 255, 0.2)',
-                            borderWidth: 1,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y}%`;
-                                }
-                            }
+                        animation: {
+                            animateRotate: true,
+                            duration: 2000
                         }
-                    },
-                    scales: {
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                font: {
-                                    size: 11
-                                }
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                font: {
-                                    size: 11
-                                },
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        }
-                    },
-                    animation: {
-                        duration: 1500,
-                        easing: 'easeOutBounce'
                     }
-                }
-            });
-        }
-
-        // 3. Average Scores Chart
-        const averageCtx = document.getElementById('averageChart');
-        if (averageCtx) {
-            const averageScores = assessmentData.disorders.map(disorder => {
-                const scores = assessmentData.scores[disorder];
-                return scores.reduce((a, b) => a + b, 0) / scores.length;
-            });
-
-            new Chart(averageCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: assessmentData.disorders,
-                    datasets: [{
-                        data: averageScores,
-                        backgroundColor: assessmentData.disorders.map(disorder => colors[disorder].primary),
-                        borderColor: '#fff',
-                        borderWidth: 3,
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: {
-                                    size: 12,
-                                    weight: '500'
-                                }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            borderColor: 'rgba(255, 255, 255, 0.2)',
-                            borderWidth: 1,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.label}: ${context.parsed.toFixed(1)}%`;
-                                }
-                            }
-                        }
-                    },
-                    animation: {
-                        animateRotate: true,
-                        duration: 2000
-                    }
-                }
-            });
-        }
-
-        // 4. Progress/Improvement Chart
-        const progressCtx = document.getElementById('progressChart');
-        if (progressCtx) {
-            // Calculate improvement (first vs last assessment)
-            const improvementData = assessmentData.disorders.map(disorder => {
-                const scores = assessmentData.scores[disorder];
-                const firstScore = scores[0];
-                const lastScore = scores[scores.length - 1];
-                return ((firstScore - lastScore) / firstScore) * 100; // Positive = improvement
-            });
-
-            new Chart(progressCtx, {
-                type: 'bar',
-                data: {
-                    labels: assessmentData.disorders,
-                    datasets: [{
-                        label: 'Improvement %',
-                        data: improvementData,
-                        backgroundColor: improvementData.map(value => 
-                            value > 0 ? 'rgba(72, 187, 120, 0.8)' : 'rgba(255, 107, 107, 0.8)'
-                        ),
-                        borderColor: improvementData.map(value => 
-                            value > 0 ? 'rgba(72, 187, 120, 1)' : 'rgba(255, 107, 107, 1)'
-                        ),
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            borderColor: 'rgba(255, 255, 255, 0.2)',
-                            borderWidth: 1,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.parsed.x;
-                                    const status = value > 0 ? 'Improved' : 'Worsened';
-                                    return `${status}: ${Math.abs(value).toFixed(1)}%`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                font: {
-                                    size: 11
-                                },
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        },
-                        y: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                font: {
-                                    size: 11
-                                },
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        }
-                    },
-                    animation: {
-                        duration: 1500,
-                        easing: 'easeOutBounce'
-                    }
-                }
-            });
+                });
+            }
+        } else {
+            // No data available
+            console.log('No assessment data available for charts');
         }
     </script>
 </body>

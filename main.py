@@ -10,7 +10,7 @@ import logging
 import json
 
 from models import Base, Patient, Assessment
-from inference_engine import InferenceEngine
+from inference_engine import MamdaniFuzzyInferenceEngine
 from KB import ClusterBKnowledgeBase
 from database import SessionLocal, engine
 
@@ -27,7 +27,7 @@ templates = Jinja2Templates(directory="templates")
 
 # Initialize knowledge base and inference engine
 kb = ClusterBKnowledgeBase()
-inference_engine = InferenceEngine(kb)
+inference_engine = MamdaniFuzzyInferenceEngine(kb)
 
 # Dependency to get database session
 def get_db():
@@ -97,8 +97,15 @@ async def submit_answer(
     if assessment.answers is None:
         assessment.answers = {}
     
-    # Store the answer with consistent key format
-    assessment.answers[question_id] = answer.strip()
+    # Validate answer format for fuzzy system
+    valid_answers = ["never", "rarely", "sometimes", "often", "always", "yes", "no"]
+    normalized_answer = answer.strip().lower()
+    if normalized_answer not in valid_answers:
+        logger.warning(f"Invalid answer '{answer}' received, defaulting to 'sometimes'")
+        normalized_answer = "sometimes"
+    
+    # Store the normalized answer
+    assessment.answers[question_id] = normalized_answer
     
     # CRITICAL FIX: Mark the answers field as modified for SQLAlchemy to detect changes
     from sqlalchemy.orm.attributes import flag_modified
@@ -130,7 +137,7 @@ async def submit_answer(
             "is_age_question": next_question_id == "aspd_q9"
         }
     else:
-        logger.info("Assessment completed, calculating results")
+        logger.info("Assessment completed, calculating results using Mamdani fuzzy inference")
         
         # Ensure we have the latest answers from the database
         db.refresh(assessment)
@@ -143,28 +150,21 @@ async def submit_answer(
             logger.error("No answers found in assessment")
             raise HTTPException(status_code=500, detail="No answers found for assessment")
         
-        # Calculate results
+        # Calculate results using the Mamdani fuzzy inference engine
         try:
             raw_scores = inference_engine.calculate_disorder_probability(current_answers)
-            logger.info(f"Raw scores from inference engine: {raw_scores}")
+            logger.info(f"Raw scores from Mamdani inference engine: {raw_scores}")
         except Exception as e:
-            logger.error(f"Error calculating scores: {e}")
+            logger.error(f"Error in Mamdani fuzzy inference: {e}")
             raise HTTPException(status_code=500, detail=f"Error calculating scores: {str(e)}")
         
-        # Ensure scores are properly formatted as percentages (0-100)
+        # Scores from the new engine should already be in percentage format (0-100)
         formatted_scores = {}
         for disorder, score in raw_scores.items():
             try:
                 float_score = float(score) if score is not None else 0.0
-                
-                # Ensure score is in percentage format (0-100)
-                if 0.0 <= float_score <= 1.0 and float_score != 0.0:
-                    # If score looks like a probability (0-1), convert to percentage
-                    formatted_score = float_score * 100.0
-                else:
-                    # Score should already be a percentage
-                    formatted_score = max(0.0, min(100.0, float_score))
-                
+                # Ensure score is within valid range and cap at 85%
+                formatted_score = max(0.0, min(85.0, float_score))
                 formatted_scores[disorder] = round(formatted_score, 1)
             except (ValueError, TypeError):
                 logger.error(f"Error processing score for {disorder}: {score}")
@@ -174,16 +174,30 @@ async def submit_answer(
         
         # Generate recommendations
         try:
-            recommendations = inference_engine.generate_recommendations(formatted_scores)
+            recommendations = inference_engine.generate_enhanced_recommendations(formatted_scores)
             logger.info(f"Generated {len(recommendations)} recommendations")
         except Exception as e:
             logger.error(f"Error generating recommendations: {e}")
             recommendations = []
         
+        # Generate detailed report if the engine supports it
+        detailed_report = None
+        try:
+            if hasattr(inference_engine, 'generate_detailed_assessment_report'):
+                detailed_report = inference_engine.generate_detailed_assessment_report(formatted_scores, current_answers)
+                logger.info("Generated detailed assessment report with fuzzy insights")
+        except Exception as e:
+            logger.error(f"Error generating detailed report: {e}")
+        
         # Update assessment with results
         assessment.scores = formatted_scores
         assessment.recommendations = recommendations
         assessment.completed = True
+        
+        # Store detailed report if available
+        if detailed_report:
+            assessment.detailed_report = detailed_report
+            flag_modified(assessment, 'detailed_report')
         
         # Mark the fields as modified
         flag_modified(assessment, 'scores')
@@ -192,7 +206,7 @@ async def submit_answer(
         db.commit()
         db.refresh(assessment)
         
-        logger.info(f"Assessment completed and saved with scores: {assessment.scores}")
+        logger.info(f"Assessment completed and saved with Mamdani fuzzy scores: {assessment.scores}")
         
         return {"is_last": True}
 
@@ -221,7 +235,7 @@ async def view_results(request: Request, patient_id: int, db: Session = Depends(
             for disorder, score in assessment.scores.items():
                 try:
                     float_score = float(score) if score is not None else 0.0
-                    processed_scores[disorder] = round(max(0.0, min(100.0, float_score)), 1)
+                    processed_scores[disorder] = round(max(0.0, min(85.0, float_score)), 1)
                 except (ValueError, TypeError):
                     logger.error(f"Error processing score for display: {disorder}={score}")
                     processed_scores[disorder] = 0.0
@@ -290,7 +304,8 @@ async def debug_scores(patient_id: int, db: Session = Depends(get_db)):
             "raw_scores": assessment.scores,
             "answers": assessment.answers,
             "answer_count": len(assessment.answers) if assessment.answers else 0,
-            "recommendations_count": len(assessment.recommendations) if assessment.recommendations else 0
+            "recommendations_count": len(assessment.recommendations) if assessment.recommendations else 0,
+            "has_detailed_report": hasattr(assessment, 'detailed_report') and assessment.detailed_report is not None
         })
     
     return {"debug_info": debug_info}
@@ -302,16 +317,17 @@ async def debug_knowledge_base():
     debug_info = {
         "total_questions": len(kb.questions),
         "question_ids": list(kb.questions.keys()),
-        "question_details": {}
+        "question_mapping": {}
     }
     
-    for q_id, question in kb.questions.items():
-        impacts = kb.get_question_impacts(q_id) if hasattr(kb, 'get_question_impacts') else []
-        debug_info["question_details"][q_id] = {
-            "question_text": question.get("text", "No text"),
-            "type": question.get("type", "No type"),
-            "impacts": impacts
-        }
+    # Get question details from the knowledge base
+    for q_id in kb.questions.keys():
+        question = kb.get_question(q_id)
+        if question:
+            debug_info["question_mapping"][q_id] = {
+                "text": question.get("text", "No text available"),
+                "impacts": question.get("impacts", {})
+            }
     
     return debug_info
 
@@ -336,17 +352,25 @@ async def debug_test_scoring():
         else:
             test_answers[q_id] = "rarely"
     
-    logger.info(f"Testing with {len(test_answers)} answers")
+    logger.info(f"Testing Mamdani fuzzy inference with {len(test_answers)} answers")
     
     # Calculate scores
     try:
         scores = inference_engine.calculate_disorder_probability(test_answers)
+        
+        # Generate detailed report for testing
+        detailed_report = None
+        if hasattr(inference_engine, 'generate_detailed_assessment_report'):
+            detailed_report = inference_engine.generate_detailed_assessment_report(scores, test_answers)
+        
         return {
             "success": True,
             "total_questions": len(question_ids),
             "answered_questions": len(test_answers),
             "test_answers": test_answers,
-            "calculated_scores": scores
+            "calculated_scores": scores,
+            "has_detailed_report": detailed_report is not None,
+            "inference_method": "Complete Mamdani Fuzzy Inference"
         }
     except Exception as e:
         logger.error(f"Error in test scoring: {e}")
@@ -355,6 +379,33 @@ async def debug_test_scoring():
             "error": str(e),
             "test_answers": test_answers
         }
+
+@app.get("/debug/fuzzy-systems")
+async def debug_fuzzy_systems():
+    """Debug endpoint to inspect the fuzzy systems in the inference engine"""
+    
+    debug_info = {
+        "inference_type": "Complete Mamdani Fuzzy Inference",
+        "fuzzy_systems": {}
+    }
+    
+    # Check what fuzzy systems are initialized
+    if hasattr(inference_engine, 'answer_fuzzy_systems'):
+        debug_info["fuzzy_systems"]["answer_systems"] = len(inference_engine.answer_fuzzy_systems)
+    
+    if hasattr(inference_engine, 'symptom_aggregation_systems'):
+        debug_info["fuzzy_systems"]["symptom_aggregation_systems"] = len(inference_engine.symptom_aggregation_systems)
+    
+    if hasattr(inference_engine, 'disorder_fuzzy_systems'):
+        debug_info["fuzzy_systems"]["disorder_systems"] = len(inference_engine.disorder_fuzzy_systems)
+    
+    if hasattr(inference_engine, 'comorbidity_fuzzy_system'):
+        debug_info["fuzzy_systems"]["has_comorbidity_system"] = True
+    
+    if hasattr(inference_engine, 'risk_assessment_system'):
+        debug_info["fuzzy_systems"]["has_risk_assessment_system"] = True
+    
+    return debug_info
 
 @app.get("/debug/current-assessment/{patient_id}")
 async def debug_current_assessment(patient_id: int, db: Session = Depends(get_db)):
@@ -586,14 +637,22 @@ def process_metrics_data(assessments):
     else:
         rate_of_change = "N/A"
     
-    # Generate insights
+    # Generate insights with fuzzy linguistic descriptions
     trend_analysis = "Positive" if overall_change > 0 else "Negative" if overall_change < 0 else "Neutral"
     trend_description = f"Overall {trend_analysis.lower()} trend with {abs(overall_change):.1f}% change"
     
-    # Risk level based on latest assessment average
+    # Risk level based on latest assessment average (using fuzzy linguistic terms)
     latest_avg = sum(last_scores) / len(last_scores) if last_scores else 0
-    risk_level = "Low" if latest_avg < 40 else "Medium" if latest_avg < 70 else "High"
-    risk_description = f"Current risk level is {risk_level.lower()} based on latest assessment"
+    if latest_avg < 30:
+        risk_level = "Low"
+    elif latest_avg < 50:
+        risk_level = "Low-Moderate"
+    elif latest_avg < 70:
+        risk_level = "Moderate-High"
+    else:
+        risk_level = "High"
+    
+    risk_description = f"Current risk level is {risk_level.lower()} based on Mamdani fuzzy assessment"
     
     # Treatment progress based on overall change
     treatment_progress = "Significant" if abs(overall_change) > 20 else "Moderate" if abs(overall_change) > 10 else "Minimal"
@@ -601,7 +660,7 @@ def process_metrics_data(assessments):
     
     # Next steps based on trend
     next_steps = "Continue Current Treatment" if overall_change > 0 else "Review Treatment Plan"
-    next_steps_description = "Consider adjusting treatment approach based on current trends"
+    next_steps_description = "Consider adjusting treatment approach based on fuzzy assessment trends"
     
     return {
         "dates": dates,
@@ -651,6 +710,30 @@ async def view_metrics(request: Request, patient_id: int, db: Session = Depends(
     
     if metrics_data:
         template_data.update(metrics_data)
+    else:
+        # Ensure all required variables are defined even when no metrics data
+        template_data.update({
+            "dates": [],
+            "disorders": [],
+            "scores": {},
+            "improved_count": 0,
+            "worsened_count": 0,
+            "stable_count": 0,
+            "highest_avg_disorder": "",
+            "most_variable_disorder": "",
+            "overall_trend": "",
+            "rate_of_change": "",
+            "time_period": "",
+            "latest_date": "",
+            "trend_analysis": "",
+            "trend_description": "",
+            "risk_level": "",
+            "risk_description": "",
+            "treatment_progress": "",
+            "treatment_description": "",
+            "next_steps": "",
+            "next_steps_description": ""
+        })
     
     return templates.TemplateResponse(
         "metrics.html",

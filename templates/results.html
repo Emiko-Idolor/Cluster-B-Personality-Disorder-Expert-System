@@ -542,8 +542,8 @@
         }
 
         .level.negligible {
-            background-color: rgba(156, 163, 175, 0.2);
-            color: #9ca3af;
+            background-color: rgba(139, 92, 246, 0.2);
+            color: #8b5cf6;
         }
     </style>
 </head>
@@ -615,9 +615,19 @@
                 <div class="recommendations-section">
                     <h3 class="recommendations-title">Recommendations</h3>
                     {% for recommendation in assessment.recommendations %}
-                    {% if recommendation.score >= 60 %}
                     <div class="recommendation-card">
-                        <h4 class="recommendation-header">{{ recommendation.disorder }}</h4>
+                        <h4 class="recommendation-header">
+                            {{ recommendation.disorder }}
+                            {% if recommendation.score >= 60 %}
+                                <span class="level high">High Probability</span>
+                            {% elif recommendation.score >= 40 %}
+                                <span class="level moderate">Moderate Probability</span>
+                            {% elif recommendation.score >= 20 %}
+                                <span class="level low">Low Probability</span>
+                            {% else %}
+                                <span class="level negligible">Negligible Probability</span>
+                            {% endif %}
+                        </h4>
                         <p class="recommendation-description">{{ recommendation.description }}</p>
                         
                         {% if recommendation.criteria_met %}
@@ -640,7 +650,6 @@
                             </ul>
                         </div>
                     </div>
-                    {% endif %}
                     {% endfor %}
                 </div>
                 {% endif %}

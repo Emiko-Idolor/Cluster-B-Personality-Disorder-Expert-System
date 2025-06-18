@@ -440,7 +440,7 @@ class ClusterBKnowledgeBase:
             "hpd_q8": "Do you believe relationships are more intimate or close than they actually are (e.g., thinking a casual acquaintance is a close friend)?",
             
             # Narcissistic PD Questions from document
-            "npd_q1": "Do you feel most comfortable with people you see as unique, successful, or influential?",
+            "npd_q1": "Do you often feel you have special qualities that set you apart from others?",
             "npd_q2": "Are you preoccupied with fantasies of unlimited success, power, beauty, brilliance, or perfect love?",
             "npd_q3": "Do you feel most comfortable with people you see as unique, successful, or influential?",
             "npd_q4": "Do you require excessive admiration or get upset if you don't receive it (e.g., fishing for compliments, reacting poorly to criticism)?",
